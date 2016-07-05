@@ -90,7 +90,7 @@ class ViewController: UIViewController, UICollectionViewDataSource, UICollection
      * Parameters: picker - the image picker controller that is handling this method.
      *   info - information about the image being chosen or edited.
      * Purpose: This method checks to see if an image was chosen and updates the images being used by the
-     *   app if one was chosen.
+     *   app if one was chosen. This method also sends the image chosen to any peers in the current session.
      * Return Value: None
      */
     
@@ -109,6 +109,21 @@ class ViewController: UIViewController, UICollectionViewDataSource, UICollection
         
         images.insert(newImage, atIndex: 0)
         collectionView.reloadData()
+        
+        // 1
+        if mcSession.connectedPeers.count > 0 {
+            // 2
+            if let imageData = UIImagePNGRepresentation(newImage) {
+                // 3
+                do {
+                    try mcSession.sendData(imageData, toPeers: mcSession.connectedPeers, withMode: .Reliable)
+                } catch let error as NSError {
+                    let ac = UIAlertController(title: "Send error", message: error.localizedDescription, preferredStyle: .Alert)
+                    ac.addAction(UIAlertAction(title: "OK", style: .Default, handler: nil))
+                    presentViewController(ac, animated: true, completion: nil)
+                }
+            }
+        }
     }
     
     /*
@@ -160,6 +175,81 @@ class ViewController: UIViewController, UICollectionViewDataSource, UICollection
         let mcBrowser = MCBrowserViewController(serviceType: "hws-project25", session: mcSession)
         mcBrowser.delegate = self
         presentViewController(mcBrowser, animated: true, completion: nil)
+    }
+    
+    /*
+     * Function Name: session
+     * Parameters: session - the session where the data was sent.
+     *   data - the data that was sent.
+     *   peerID - the peer that sent the data.
+     * Purpose: This method handles when a picture is sent by a peer during a session.
+     * Return Value: None
+     */
+    
+    func session(session: MCSession, didReceiveData data: NSData, fromPeer peerID: MCPeerID) {
+        if let image = UIImage(data: data) {
+            dispatch_async(dispatch_get_main_queue()) { [unowned self] in
+                self.images.insert(image, atIndex: 0)
+                self.collectionView.reloadData()
+            }
+        }
+    }
+    
+    /*
+     * Function Name: session
+     * Parameters: session - the session where the data was sent.
+     *   data - the data that was sent.
+     *   state - the new states of the peer.
+     * Purpose: This method provides information when a peer's state changes.
+     * Return Value: None
+     */
+    
+    func session(session: MCSession, peer peerID: MCPeerID, didChangeState state: MCSessionState) {
+        switch state {
+        case MCSessionState.Connected:
+            print("Connected: \(peerID.displayName)")
+            
+        case MCSessionState.Connecting:
+            print("Connecting: \(peerID.displayName)")
+            
+        case MCSessionState.NotConnected:
+            print("Not Connected: \(peerID.displayName)")
+        }
+    }
+    
+    /*
+     * Function Name: browserViewControllerDidFinish
+     * Parameters: browserViewController - the view controller being dismissed.
+     * Purpose: This method animates the dismissal of the view controller.
+     * Return Value: None
+     */
+    
+    func browserViewControllerDidFinish(browserViewController: MCBrowserViewController) {
+        dismissViewControllerAnimated(true, completion: nil)
+    }
+    
+    /*
+     * Function Name: browserViewControllerWasCancelled
+     * Parameters: browserViewController - the view controller being dismissed.
+     * Purpose: This method animates the dismissal of the view controller when cancel is pressed.
+     * Return Value: None
+     */
+    
+    func browserViewControllerWasCancelled(browserViewController: MCBrowserViewController) {
+        dismissViewControllerAnimated(true, completion: nil)
+    }
+    
+    // Empty methods for conforming to protocols.
+    func session(session: MCSession, didReceiveStream stream: NSInputStream, withName streamName: String, fromPeer peerID: MCPeerID) {
+        
+    }
+    
+    func session(session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, withProgress progress: NSProgress) {
+        
+    }
+    
+    func session(session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, atURL localURL: NSURL, withError error: NSError?) {
+        
     }
 
 }
