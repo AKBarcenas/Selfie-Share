@@ -22,6 +22,13 @@ class ViewController: UIViewController, UICollectionViewDataSource, UICollection
     // Handles session creation and session advertisement.
     var mcAdvertiserAssistant: MCAdvertiserAssistant!
     
+    /*
+     * Function Name: viewDidLoad
+     * Parameters: None
+     * Purpose: This method sets up the visual environment and loads the session information for the user.
+     * Return Value: Int
+     */
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
